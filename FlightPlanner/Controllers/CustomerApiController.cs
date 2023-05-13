@@ -6,13 +6,17 @@ namespace FlightPlanner.Controllers
 {
     [Route("api")]
     [ApiController]
-    public class CustomerApiController : Controller
+    public class CustomerApiController : BaseApiController
     {
+        public CustomerApiController(FlightPlannerDbContext context) : base(context)
+        {
+        }
+
         [HttpGet]
         [Route("airports")]
         public IActionResult SearchAirport(string search)
         {
-            var result = FlightStorage.SearchAirport(search);
+            var result = FlightStorageOperations.SearchAirport(_context, search);
             if(result == null) 
             {
                 return NotFound();
@@ -28,7 +32,7 @@ namespace FlightPlanner.Controllers
             {
                 return BadRequest();
             }
-            var result = FlightStorage.SearchFlight(search);
+            var result = FlightStorageOperations.SearchFlight(_context, search);
             return Ok(result);
         }
 
@@ -36,11 +40,12 @@ namespace FlightPlanner.Controllers
         [Route("flights/{id}")]
         public IActionResult SearchFlightById(int id)
         {
-            if(FlightStorage.SearchFlightById(id) == null) 
+            var flight = FlightStorageOperations.FetchFlight(_context, id);
+            if (flight == null) 
             { 
                 return NotFound(); 
             }
-            return Ok(FlightStorage.SearchFlightById(id));
+            return Ok(flight);
         }
     }
 }

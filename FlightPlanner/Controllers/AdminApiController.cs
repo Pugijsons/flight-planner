@@ -3,19 +3,26 @@ using FlightPlanner.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace FlightPlanner.Controllers
 {
     [Route("admin-api")]
     [ApiController]
     [Authorize]
-    public class AdminApiController : ControllerBase
+    public class AdminApiController : BaseApiController
     {
+        public AdminApiController(FlightPlannerDbContext context) : base(context)
+        {
+        }
+
         [HttpGet]
         [Route("flights/{id}")]
         public IActionResult GetFlights(int id)
         {
-            var flight = FlightStorage.GetFlight(id);
+            var flight = FlightStorageOperations.FetchFlight(_context, id);
+
             if (flight == null)
             {
                 return NotFound();
@@ -26,24 +33,32 @@ namespace FlightPlanner.Controllers
         [Route("flights")]
         public IActionResult AddFlight(Flight flight)
         {
-            if(FlightStorage.CheckFlightDuplicate(flight))
-            {
-                return Conflict();
-            }
 
-            if(FlightStorage.CheckFlight(flight) || FlightStorage.CheckSameAirport(flight) || FlightStorage.CheckTime(flight))
+            if (FlightStorageOperations.CheckFlight(flight) || FlightStorageOperations.CheckSameAirport(flight) || FlightStorageOperations.CheckTime(flight))
             {
                 return BadRequest();
             }
 
-            FlightStorage.AddFlight(flight);
+            if (FlightStorageOperations.CheckFlightDuplicate(_context, flight))
+            {
+                return Conflict();
+            }
+
+            _context.Flights.Add(flight);
+            _context.SaveChanges();
             return Created("", flight);
         }
         [HttpDelete]
         [Route("flights/{id}")]
         public IActionResult DeleteFlight(int id)
         {
-            FlightStorage.DeleteFlight(id);
+            var flight = FlightStorageOperations.FetchFlight(_context, id);
+            if (flight == null)
+            {
+                return Ok();
+            }
+            _context.Flights.Remove(flight);
+            _context.SaveChanges();
             return Ok();
         }
     }

@@ -1,4 +1,5 @@
 ﻿using FlightPlanner.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Any;
 using System;
 using System.Collections.Generic;
@@ -8,39 +9,21 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace FlightPlanner.Storage
 {
-    public class FlightStorage
+    public class FlightStorageOperations
     {
-        private static List<Flight> _flights = new List<Flight>();
-        private static int _id;
-        public static Flight GetFlight(int id)
+
+        public static Flight FetchFlight(FlightPlannerDbContext context, int id)
         {
-            return _flights.SingleOrDefault(x => x.Id == id);
+           return context.Flights.Include(f => f.From)
+                .Include(f => f.To)
+                .SingleOrDefault(f => f.Id == id);
         }
 
-        public static Flight AddFlight(Flight flight)
+        public static bool CheckFlightDuplicate(FlightPlannerDbContext context, Flight flight)
         {
-            lock (_flights)
+            lock (context.Flights)
             {
-                flight.Id = _id++;
-                _flights.Add(flight);
-                return flight;
-            }
-        }
-
-        public static void DeleteFlight(int id)
-        {
-            lock (_flights)
-            {
-                var flightToDelete = _flights.FirstOrDefault(x => x.Id == id);
-                _flights.Remove(flightToDelete);
-            }
-        }
-
-        public static bool CheckFlightDuplicate(Flight flight) 
-        {
-            lock (_flights)
-            {
-                return _flights.Any(f => f.To.Equals(flight.To) && f.From.Equals(flight.From) && f.Carrier == flight.Carrier && f.DepartureTime == flight.DepartureTime && f.ArrivalTime == flight.ArrivalTime);
+                return context.Flights.Any(f => f.To.AirportCode == flight.To.AirportCode && f.From.AirportCode == flight.From.AirportCode && f.Carrier == flight.Carrier && f.DepartureTime == flight.DepartureTime && f.ArrivalTime == flight.ArrivalTime);
             }
         }
 
@@ -80,33 +63,30 @@ namespace FlightPlanner.Storage
             return false;
         }
 
-        public static void Clear()
+        public static Airport[] SearchAirport(FlightPlannerDbContext context, string search)
         {
-            _flights.Clear();
+            var flights = context.Flights.
+                Include(f => f.From)
+                .Include(f => f.To)
+                .ToList(); 
+
+            var returnList = flights
+                .SelectMany(flight => new[] { flight.From, flight.To })
+                .Where(airport => airport != null && airport.Compare(search))
+                .Distinct()
+                .ToArray();
+
+            return returnList;
         }
 
-        public static Airport[] SearchAirport(string search)
+        public static PageResult SearchFlight(FlightPlannerDbContext context, SearchFlightRequest search)
         {
-               List<Airport> returnList = new List<Airport>();
-                foreach (Flight flight in _flights)
-                {
-                    if (flight.From.Compare(search))
-                    {
-                        returnList.Add(flight.From);
-                    }
-
-                    if (flight.To.Compare(search))
-                    {
-                        returnList.Add(flight.To);
-                    }
-                }
-                return returnList.ToArray();
-        }
-
-        public static PageResult SearchFlight(SearchFlightRequest search)
-        {
-                List<Flight> returnList = new List<Flight>();
-                foreach (Flight flight in _flights)
+            var flights = context.Flights.
+               Include(f => f.From)
+               .Include(f => f.To)
+               .ToList();
+            List<Flight> returnList = new List<Flight>();
+                foreach (Flight flight in flights)
                 {
                     if (search.To.Equals(flight.To.AirportCode) && search.From.Equals(flight.From.AirportCode))
                     {
@@ -118,11 +98,6 @@ namespace FlightPlanner.Storage
                 result.TotalItems = returnList.Count();
                 result.Page = 0;
                 return result;
-        }
-
-        public static Flight SearchFlightById(int id)
-        {
-            return _flights.FirstOrDefault(x => x.Id == id);
         }
     }
 }
