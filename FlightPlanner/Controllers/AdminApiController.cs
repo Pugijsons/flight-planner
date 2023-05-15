@@ -13,6 +13,7 @@ namespace FlightPlanner.Controllers
     [Authorize]
     public class AdminApiController : BaseApiController
     {
+        private static readonly object locker = new object();
         public AdminApiController(FlightPlannerDbContext context) : base(context)
         {
         }
@@ -29,25 +30,29 @@ namespace FlightPlanner.Controllers
             }
             return Ok(flight);
         }
+
         [HttpPut]
         [Route("flights")]
         public IActionResult AddFlight(Flight flight)
         {
-
-            if (FlightStorageOperations.CheckFlight(flight) || FlightStorageOperations.CheckSameAirport(flight) || FlightStorageOperations.CheckTime(flight))
+            lock (locker)
             {
-                return BadRequest();
-            }
+                if (FlightStorageOperations.CheckFlight(flight) || FlightStorageOperations.CheckSameAirport(flight) || FlightStorageOperations.CheckTime(flight))
+                {
+                    return BadRequest();
+                }
 
-            if (FlightStorageOperations.CheckFlightDuplicate(_context, flight))
-            {
-                return Conflict();
+                if (FlightStorageOperations.CheckFlightDuplicate(_context, flight))
+                {
+                    return Conflict();
+                }
+   
+                _context.Flights.Add(flight);
+                _context.SaveChanges();
+                return Created("", flight);
             }
+         }
 
-            _context.Flights.Add(flight);
-            _context.SaveChanges();
-            return Created("", flight);
-        }
         [HttpDelete]
         [Route("flights/{id}")]
         public IActionResult DeleteFlight(int id)
