@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace FlightPlanner.Migrations
+namespace FlightPlanner.Data.Migrations
 {
     [DbContext(typeof(FlightPlannerDbContext))]
     partial class FlightPlannerDbContextModelSnapshot : ModelSnapshot

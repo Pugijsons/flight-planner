@@ -13,6 +13,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using FlightPlanner.Core.Services;
+using FlightPlanner.Core.Validations;
+using FlightPlanner.Data;
+using FlightPlanner.Models;
+using FlightPlanner.Services;
+using FlightPlanner.Services.Validations;
 
 namespace FlightPlanner
 {
@@ -36,6 +43,12 @@ namespace FlightPlanner
             });
             services.AddAuthentication("BasicAuthentication").AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
             services.AddDbContext<FlightPlannerDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddTransient<IFlightPlannerDbContext, FlightPlannerDbContext>();
+            services.AddSingleton<IMapper>(AutoMapperConfig.CreateMapper());
+
+            services.RegisterValidations();
+
+            services.RegisterServices();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -2,12 +2,7 @@
 
 namespace FlightPlanner.Controllers
 {
-    public abstract class BaseApiController : ControllerBase
+    public class BaseApiController : ControllerBase
     {
-        protected FlightPlannerDbContext _context;
-        protected BaseApiController(FlightPlannerDbContext context)
-        {
-            _context = context;
-        }
     }
 }

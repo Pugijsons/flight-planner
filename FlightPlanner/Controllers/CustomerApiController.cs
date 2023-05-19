@@ -1,5 +1,9 @@
-﻿using FlightPlanner.Models;
-using FlightPlanner.Storage;
+﻿using System.Collections.Generic;
+using System.Linq;
+using AutoMapper;
+using FlightPlanner.Core.Services;
+using FlightPlanner.Core.Validations;
+using FlightPlanner.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FlightPlanner.Controllers
@@ -8,44 +12,55 @@ namespace FlightPlanner.Controllers
     [ApiController]
     public class CustomerApiController : BaseApiController
     {
-        public CustomerApiController(FlightPlannerDbContext context) : base(context)
+        private readonly ICustomerService _customerService;
+        private readonly IMapper _mapper;
+        private readonly ISearchRequestValidation _searchRequestValidation;
+        public CustomerApiController(ICustomerService customerService, IMapper mapper, ISearchRequestValidation searchRequestValidation) 
         {
+            _customerService = customerService;
+            _mapper = mapper;
+            _searchRequestValidation = searchRequestValidation;
         }
 
         [HttpGet]
         [Route("airports")]
-        public IActionResult SearchAirport(string search)
+        public IActionResult SearchAirports(string search)
         {
-            var result = FlightStorageOperations.SearchAirport(_context, search);
-            if(result == null) 
+            var result = _customerService.SearchAirports(search);
+            if (result == null)
             {
                 return NotFound();
             }
-            return Ok(result);
+            List<ReplyAirport> returnList = new List<ReplyAirport>();
+            foreach (var item in result)
+            {
+                returnList.Add(_mapper.Map<ReplyAirport>(item));
+            }
+            return Ok(returnList);
         }
 
         [HttpPost]
         [Route("flights/search")]
-        public IActionResult SearchFlight(SearchFlightRequest search)
+        public IActionResult SearchFlights(SearchFlightRequest request)
         {
-            if(string.IsNullOrEmpty(search.To) || string.IsNullOrEmpty(search.From) || search.To == search.From)
+            if (_searchRequestValidation.IsSearchRequestValid(request))
             {
                 return BadRequest();
             }
-            var result = FlightStorageOperations.SearchFlight(_context, search);
-            return Ok(result);
+
+            return Ok(_customerService.SearchFlights(request));
         }
 
         [HttpGet]
         [Route("flights/{id}")]
         public IActionResult SearchFlightById(int id)
         {
-            var flight = FlightStorageOperations.FetchFlight(_context, id);
+            var flight = _customerService.GetFlightById(id);
             if (flight == null) 
             { 
                 return NotFound(); 
             }
-            return Ok(flight);
+            return Ok(_mapper.Map<ReplyFlight>(flight));
         }
     }
 }

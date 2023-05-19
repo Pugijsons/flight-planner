@@ -7,10 +7,10 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace FlightPlanner.Migrations
+namespace FlightPlanner.Data.Migrations
 {
     [DbContext(typeof(FlightPlannerDbContext))]
-    [Migration("20230511154355_init")]
+    [Migration("20230518100952_init")]
     partial class init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
