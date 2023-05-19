@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using FlightPlanner.Models;
 using FlightPlanner.Core.Services;
-using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 
 namespace FlightPlanner.Services
 {
